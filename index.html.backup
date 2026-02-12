@@ -62,75 +62,9 @@
         .sidebar-header {
             font-size: 1.2rem;
             font-weight: 600;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             color: var(--text-primary);
             letter-spacing: -0.5px;
-        }
-
-        .agent-status-container {
-            margin-bottom: 1.5rem;
-            padding: 0.8rem;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-        }
-
-        .agent-status-item {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            padding: 0.5rem 0;
-        }
-
-        .agent-status-item:not(:last-child) {
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 0.8rem;
-            margin-bottom: 0.8rem;
-        }
-
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        .status-dot.connected {
-            background: var(--success);
-            box-shadow: 0 0 8px var(--success);
-            animation: pulse 2s infinite;
-        }
-
-        .status-dot.working {
-            background: var(--warning);
-            box-shadow: 0 0 8px var(--warning);
-            animation: pulse 2s infinite;
-        }
-
-        .status-text {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .status-name {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .status-label {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            margin-top: 0.1rem;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
         }
 
         .projects-list {
@@ -501,30 +435,11 @@
             padding: 0.75rem;
             cursor: grab;
             transition: all 0.15s ease;
-            position: relative;
         }
 
         .task:hover {
             border-color: var(--accent);
             background: var(--bg-primary);
-        }
-
-        .approve-btn {
-            margin-top: 0.5rem;
-            width: 100%;
-            padding: 0.5rem;
-            background: var(--success);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.8rem;
-            transition: background 0.2s;
-        }
-
-        .approve-btn:hover {
-            background: #2ea043;
         }
 
         .task-title {
@@ -1192,18 +1107,6 @@
     <div class="sidebar">
         <div class="sidebar-header">🦞 OpenClaw</div>
         
-        <!-- Agent Status Indicators -->
-        <div class="agent-status-container">
-            <div class="agent-status-item main-agent">
-                <div class="status-dot connected"></div>
-                <div class="status-text">
-                    <div class="status-name">OAMacBookBot</div>
-                    <div class="status-label">Connected</div>
-                </div>
-            </div>
-            <div id="subagentStatusContainer"></div>
-        </div>
-        
         <!-- Navigation Menu -->
         <div class="nav-menu">
             <!-- Dashboard Menu Item -->
@@ -1564,7 +1467,6 @@
                             ${task.featureFile ? `<span style="color: var(--accent);">📄 ${task.featureFile}</span>` : ''}
                             ${task.date ? `<span>${task.date}</span>` : ''}
                         </div>
-                        ${task.status === 'review' ? `<button class="approve-btn" onclick="approveTask('${task.id}', event)">✓ Approve</button>` : ''}
                     </div>
                 `).join('');
 
@@ -1595,30 +1497,6 @@
                     }
                 });
             });
-        }
-
-        async function approveTask(taskId, event) {
-            event.stopPropagation();
-            
-            try {
-                const projects = await fetchProjects();
-                const project = projects.find(p => p.id === activeProjectId);
-                const task = project.tasks.find(t => t.id === taskId);
-                
-                const response = await fetch(`/api/projects/${activeProjectId}/tasks/${taskId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: 'done' })
-                });
-                
-                if (response.ok) {
-                    renderBoard();
-                } else {
-                    alert('Fehler beim Approve');
-                }
-            } catch (error) {
-                console.error('Error approving task:', error);
-            }
         }
 
         async function addTask(columnId, title) {
@@ -1659,50 +1537,6 @@
                 renderProjectsList();
             } catch (error) {
                 console.error('Error creating project:', error);
-            }
-        }
-
-        async function deleteProject(projectId, event) {
-            event.stopPropagation();
-            
-            const projects = await fetchProjects();
-            const project = projects.find(p => p.id === projectId);
-            
-            if (!project) {
-                alert('Projekt nicht gefunden');
-                return;
-            }
-            
-            if (!confirm(`Projekt "${project.name}" wirklich löschen?`)) {
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/projects/${projectId}`, {
-                    method: 'DELETE'
-                });
-                
-                if (response.ok) {
-                    alert('Projekt gelöscht!');
-                    
-                    // If deleted project was active, select another one
-                    if (activeProjectId === projectId) {
-                        const remainingProjects = projects.filter(p => p.id !== projectId);
-                        if (remainingProjects.length > 0) {
-                            selectProject(remainingProjects[0].id);
-                        } else {
-                            activeProjectId = null;
-                            document.getElementById('board').innerHTML = '<p style="color: var(--text-secondary);">Keine Projekte vorhanden</p>';
-                        }
-                    }
-                    
-                    renderProjectsList();
-                } else {
-                    alert('Fehler beim Löschen');
-                }
-            } catch (error) {
-                console.error('Delete error:', error);
-                alert('Fehler beim Löschen');
             }
         }
 
@@ -2430,43 +2264,10 @@
             }
         });
 
-        // Subagent Status Checker
-        async function checkSubagentStatus() {
-            try {
-                const response = await fetch('/api/subagents');
-                if (response.ok) {
-                    const data = await response.json();
-                    renderSubagentStatus(data.subagents || []);
-                }
-            } catch (error) {
-                // API endpoint doesn't exist yet, just clear subagents
-                renderSubagentStatus([]);
-            }
-        }
-
-        function renderSubagentStatus(subagents) {
-            const container = document.getElementById('subagentStatusContainer');
-            if (subagents.length === 0) {
-                container.innerHTML = '';
-                return;
-            }
-            
-            container.innerHTML = subagents.map(sub => `
-                <div class="agent-status-item">
-                    <div class="status-dot working"></div>
-                    <div class="status-text">
-                        <div class="status-name">${sub.name || 'Subagent'}</div>
-                        <div class="status-label">${sub.status || 'Working'}</div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
         // Initialize
         renderProjectsList();
         switchTab('dashboard'); // Set initial state - Dashboard als Startseite
         setInterval(renderProjectsList, 5000);
-        setInterval(checkSubagentStatus, 3000); // Check subagents every 3 seconds
     </script>
 </body>
 </html>

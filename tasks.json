@@ -1,24 +1,60 @@
 {
   "projects": [
     {
-      "id": "proj-beispiel-001",
-      "name": "Beispielprojekt",
-      "description": "Ein Beispielprojekt zur Demonstration des Kanban Boards.",
-      "docs": "# Beispielprojekt\n\n## Beschreibung\nDieses Projekt dient als Vorlage und Demonstration.",
-      "color": "#3b82f6",
-      "projectPath": "",
+      "id": "proj-781009e1",
+      "name": "TypeMaster",
+      "description": "Typing Speed Trainer - Eine Web-App zum Verbessern der Tipp-Geschwindigkeit und Genauigkeit, inspiriert von MonkeyType",
+      "docs": "# TypeMaster",
+      "color": "#56ae8d",
       "tasks": [
         {
-          "id": "PROJ-1",
-          "title": "PROJ-1: Beispielaufgabe",
-          "description": "Dies ist eine Beispielaufgabe zur Demonstration.",
+          "id": "75551a2e",
+          "title": "UI Design & Layout",
+          "description": "Haupt-Layout mit Typing-Area, Timer, WPM-Anzeige und Genauigkeits-Stats",
+          "status": "review",
+          "priority": "high",
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T11:40:00.456Z"
+        },
+        {
+          "id": "a56431e6",
+          "title": "Text Generator & Wort-Datenbank",
+          "description": "Zufällige Wörter/Texte generieren mit verschiedenen Schwierigkeitsstufen",
+          "status": "review",
+          "priority": "high",
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T11:40:03.918Z"
+        },
+        {
+          "id": "65f948e3",
+          "title": "Echtzeit-Typing Logik",
+          "description": "Tastatur-Input erfassen, WPM/Accuracy berechnen, Fehler-Highlighting",
+          "status": "review",
+          "priority": "high",
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T11:40:07.473Z"
+        },
+        {
+          "id": "ccb498e6",
+          "title": "Stats & Fortschritts-Tracking",
+          "description": "WPM-Verlauf, Personal Best, Durchschnitt, Grafiken",
           "status": "todo",
           "priority": "medium",
-          "date": "7.2.2026",
-          "createdAt": "2026-02-07T16:00:00.000Z"
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T11:40:10.647Z"
+        },
+        {
+          "id": "166ecc66",
+          "title": "Settings & Customization",
+          "description": "Dark Mode, Soundeffekte, Timer-Länge, Schwierigkeitsgrad",
+          "status": "todo",
+          "priority": "low",
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T11:40:13.752Z"
         }
       ],
-      "createdAt": "2026-02-07T16:00:00.000Z"
+      "createdAt": "2026-02-12T11:39:53.963Z",
+      "projectPath": "/Users/orkanakol/Code/typemaster"
     }
   ]
 }
