@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const { execSync } = require('child_process');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,8 +11,68 @@ const HOST = process.env.HOST || '0.0.0.0';
 app.use(express.json());
 app.use(express.static(__dirname));
 
-const dataFile = path.join(__dirname, 'tasks.json');
+const dataDir = path.join(__dirname, 'data');
+const dataFile = path.join(dataDir, 'tasks.json');
+const activityFile = path.join(dataDir, 'activity.json');
+const backupsDir = path.join(dataDir, 'backups');
 const agentStatusFile = path.join(__dirname, 'agent-status.json');
+
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+}
+if (!fs.existsSync(backupsDir)) {
+    fs.mkdirSync(backupsDir, { recursive: true });
+}
+
+if (!fs.existsSync(dataFile)) {
+    fs.writeFileSync(dataFile, JSON.stringify({ projects: [] }, null, 2), 'utf8');
+}
+if (!fs.existsSync(activityFile)) {
+    fs.writeFileSync(activityFile, JSON.stringify({ activities: [] }, null, 2), 'utf8');
+}
+
+let lastBackupAt = 0;
+
+function normalizeStatus(status) {
+    if (!status) return 'offen';
+    const s = String(status).toLowerCase();
+    if (s === 'todo') return 'offen';
+    if (s === 'in arbeit') return 'in-progress';
+    return s;
+}
+
+function writeActivityData(data) {
+    fs.writeFileSync(activityFile, JSON.stringify(data, null, 2), 'utf8');
+}
+
+function createSnapshotBackup(force = false) {
+    const now = Date.now();
+    if (!force && now - lastBackupAt < 60 * 1000) return; // max 1x/min
+
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const tasksBackup = path.join(backupsDir, `tasks-${stamp}.json`);
+    const activityBackup = path.join(backupsDir, `activity-${stamp}.json`);
+
+    try {
+        fs.copyFileSync(dataFile, tasksBackup);
+        fs.copyFileSync(activityFile, activityBackup);
+        lastBackupAt = now;
+
+        // Keep only latest 50 backups per type
+        const files = fs.readdirSync(backupsDir).sort().reverse();
+        const taskFiles = files.filter(f => f.startsWith('tasks-'));
+        const activityFiles = files.filter(f => f.startsWith('activity-'));
+
+        for (const old of taskFiles.slice(50)) {
+            fs.unlinkSync(path.join(backupsDir, old));
+        }
+        for (const old of activityFiles.slice(50)) {
+            fs.unlinkSync(path.join(backupsDir, old));
+        }
+    } catch (err) {
+        console.error('[BACKUP] Failed:', err.message);
+    }
+}
 
 function readData() {
     try {
@@ -24,28 +85,49 @@ function readData() {
 
 function writeData(data) {
     fs.writeFileSync(dataFile, JSON.stringify(data, null, 2), 'utf8');
+    createSnapshotBackup();
 }
 
 // GET all projects
 app.get('/api/projects', (req, res) => {
     const data = readData();
+    // Backward compatibility: normalize legacy statuses on read
+    data.projects = (data.projects || []).map(project => ({
+        ...project,
+        tasks: (project.tasks || []).map(task => ({
+            ...task,
+            status: normalizeStatus(task.status)
+        }))
+    }));
     res.json(data);
 });
 
 // POST new project
 app.post('/api/projects', (req, res) => {
-    const { name, description, docs } = req.body;
+    const { name, description, docs, projectPath } = req.body;
 
     if (!name) {
         return res.status(400).json({ error: 'Project name required' });
     }
 
     const data = readData();
+    const codeRoot = '/Users/jeff/CODE';
+    const projectFolderName = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const defaultPath = path.join(codeRoot, projectFolderName);
+
+    // Enforce local project root: all projects must live under /Users/jeff/CODE
+    let resolvedProjectPath = projectPath ? path.resolve(projectPath) : defaultPath;
+    if (!resolvedProjectPath.startsWith(path.resolve(codeRoot) + path.sep) && resolvedProjectPath !== path.resolve(codeRoot)) {
+        console.warn(`[PROJECT] Rejected projectPath outside ${codeRoot}: ${resolvedProjectPath}. Using default path instead.`);
+        resolvedProjectPath = defaultPath;
+    }
+
     const newProject = {
         id: `proj-${uuidv4().slice(0, 8)}`,
         name,
         description: description || '',
         docs: docs || '# ' + name,
+        projectPath: resolvedProjectPath,
         color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
         tasks: [],
         createdAt: new Date().toISOString()
@@ -54,7 +136,16 @@ app.post('/api/projects', (req, res) => {
     data.projects.push(newProject);
     writeData(data);
 
-    console.log(`[PROJECT] Created: "${name}" (${newProject.id})`);
+    // Ensure directory exists
+    try {
+        if (!fs.existsSync(newProject.projectPath)) {
+            fs.mkdirSync(newProject.projectPath, { recursive: true });
+        }
+    } catch (err) {
+        console.error(`[PROJECT] Error creating directory ${newProject.projectPath}:`, err.message);
+    }
+
+    console.log(`[PROJECT] Created: "${name}" (${newProject.id}) at ${newProject.projectPath}`);
     res.status(201).json(newProject);
 });
 
@@ -96,7 +187,7 @@ app.delete('/api/projects/:id', (req, res) => {
 // POST new task to project
 app.post('/api/projects/:projectId/tasks', (req, res) => {
     const { projectId } = req.params;
-    const { title, description, status, priority, date } = req.body;
+    const { title, description, status, priority, date, assignedAgent } = req.body;
 
     if (!title) {
         return res.status(400).json({ error: 'Title required' });
@@ -113,16 +204,43 @@ app.post('/api/projects/:projectId/tasks', (req, res) => {
         id: uuidv4().slice(0, 8),
         title,
         description: description || '',
-        status: status || 'todo',
+        status: normalizeStatus(status || 'offen'),
         priority: priority || 'medium',
+        assignedAgent: assignedAgent || 'CODEAGENT',
         date: date || new Date().toLocaleDateString('de-DE'),
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        reviewRejectCount: 0,
+        hintl: false
     };
 
     project.tasks.push(newTask);
     writeData(data);
 
-    console.log(`[TASK] Created: "${title}" in "${project.name}"`);
+    // Activity log entry for dashboard/activity stream
+    try {
+        let activityData = { activities: [] };
+        if (fs.existsSync(activityFile)) {
+            activityData = JSON.parse(fs.readFileSync(activityFile, 'utf8'));
+        }
+        activityData.activities.unshift({
+            id: String(Date.now()),
+            timestamp: new Date().toISOString(),
+            action: 'task_created',
+            title: 'Aufgabe erstellt',
+            description: `"${title}" wurde zu ${project.name} hinzugefügt`,
+            metadata: {
+                projectId: project.id,
+                projectName: project.name,
+                taskId: newTask.id
+            },
+            status: 'completed'
+        });
+        writeActivityData(activityData);
+    } catch (err) {
+        console.error('[ACTIVITY] Failed to write task_created activity:', err.message);
+    }
+
+    console.log(`[TASK] Created: "${title}" in "${project.name}" (Agent: ${newTask.assignedAgent})`);
     res.status(201).json(newTask);
 });
 
@@ -144,12 +262,95 @@ app.put('/api/projects/:projectId/tasks/:taskId', (req, res) => {
         return res.status(404).json({ error: 'Task not found' });
     }
 
-    const oldStatus = project.tasks[taskIndex].status;
-    project.tasks[taskIndex] = { ...project.tasks[taskIndex], ...updates };
+    const currentTask = project.tasks[taskIndex] || {};
+    const oldStatus = normalizeStatus(currentTask.status);
+    const normalizedUpdates = { ...updates };
+    if (Object.prototype.hasOwnProperty.call(normalizedUpdates, 'status')) {
+        normalizedUpdates.status = normalizeStatus(normalizedUpdates.status);
+    }
+
+    const nextTask = {
+        ...currentTask,
+        reviewRejectCount: currentTask.reviewRejectCount || 0,
+        hintl: !!currentTask.hintl,
+        ...normalizedUpdates
+    };
+
+    const isManualHintlReset = normalizedUpdates.status === 'offen' && (currentTask.hintl || currentTask.reviewRejectCount >= 3);
+
+    // Infinite-loop guard:
+    // If task is rejected from review back to offen 3x, move to HINTL and keep in review.
+    // But if task is already HINTL and user sets it to offen manually, allow reset.
+    const isReviewRejectedToOffen = oldStatus === 'review' && normalizedUpdates.status === 'offen' && !isManualHintlReset;
+    if (isReviewRejectedToOffen) {
+        nextTask.reviewRejectCount = (nextTask.reviewRejectCount || 0) + 1;
+        if (nextTask.reviewRejectCount >= 3) {
+            nextTask.hintl = true;
+            nextTask.hintlAt = new Date().toISOString();
+            nextTask.hintlReason = 'REVAGENT rejected task 3 times';
+            nextTask.status = 'review';
+            nextTask.assignedAgent = 'HINTL';
+        }
+    }
+
+    // Manual reset path: only when status set back to offen
+    if (isManualHintlReset) {
+        nextTask.hintl = false;
+        nextTask.hintlAt = null;
+        nextTask.hintlReason = null;
+        nextTask.reviewRejectCount = 0;
+        nextTask.status = 'offen';
+        if (!normalizedUpdates.assignedAgent || normalizedUpdates.assignedAgent === 'HINTL') {
+            nextTask.assignedAgent = 'CODEAGENT';
+        }
+    }
+
+    project.tasks[taskIndex] = nextTask;
     writeData(data);
 
-    if (updates.status && updates.status !== oldStatus) {
-        console.log(`[TASK] "${project.tasks[taskIndex].title}": ${oldStatus} → ${updates.status}`);
+    const finalStatus = normalizeStatus(nextTask.status);
+    if (normalizedUpdates.status && finalStatus !== oldStatus) {
+        console.log(`[TASK] "${project.tasks[taskIndex].title}": ${oldStatus} → ${finalStatus}`);
+
+        // Activity log entry for status transitions
+        try {
+            let activityData = { activities: [] };
+            if (fs.existsSync(activityFile)) {
+                activityData = JSON.parse(fs.readFileSync(activityFile, 'utf8'));
+            }
+            activityData.activities.unshift({
+                id: String(Date.now()),
+                timestamp: new Date().toISOString(),
+                action: 'task_updated',
+                title: 'Aufgabe verschoben',
+                description: `"${project.tasks[taskIndex].title}" → ${finalStatus}`,
+                metadata: {
+                    projectId: project.id,
+                    projectName: project.name,
+                    taskId,
+                    oldStatus,
+                    newStatus: finalStatus
+                },
+                status: 'completed'
+            });
+
+            if (nextTask.hintl) {
+                activityData.activities.unshift({
+                    id: String(Date.now() + 1),
+                    timestamp: new Date().toISOString(),
+                    type: 'warning',
+                    title: 'HINTL aktiviert',
+                    message: `🛑 Orchestrator Guard: "${project.tasks[taskIndex].title}" nach 3 Review-Rejections auf HINTL gesetzt`,
+                    description: 'Task bleibt in review und wird nicht mehr automatisch durch Orchestrator bearbeitet.',
+                    project: project.id,
+                    status: 'completed'
+                });
+            }
+
+            writeActivityData(activityData);
+        } catch (err) {
+            console.error('[ACTIVITY] Failed to write task_updated activity:', err.message);
+        }
     }
 
     res.json(project.tasks[taskIndex]);
@@ -186,17 +387,20 @@ app.get('/api/status', (req, res) => {
         projects: data.projects.length,
         totalTasks: data.projects.reduce((sum, p) => sum + p.tasks.length, 0),
         tasksByStatus: {
-            todo: 0,
+            offen: 0,
             inProgress: 0,
+            review: 0,
             done: 0
         }
     };
 
     data.projects.forEach(p => {
         p.tasks.forEach(t => {
-            if (t.status === 'todo') stats.tasksByStatus.todo++;
-            if (t.status === 'in-progress') stats.tasksByStatus.inProgress++;
-            if (t.status === 'done') stats.tasksByStatus.done++;
+            const s = normalizeStatus(t.status);
+            if (s === 'offen') stats.tasksByStatus.offen++;
+            if (s === 'in-progress') stats.tasksByStatus.inProgress++;
+            if (s === 'review') stats.tasksByStatus.review++;
+            if (s === 'done') stats.tasksByStatus.done++;
         });
     });
 
@@ -249,12 +453,107 @@ app.get('/api/molt-status', (req, res) => {
 // Activity Log
 app.get('/api/activity', (req, res) => {
     try {
-        const activityFile = path.join(__dirname, 'activity.json');
         const content = fs.readFileSync(activityFile, 'utf8');
         const data = JSON.parse(content);
-        res.json(data);
+        const limit = parseInt(req.query.limit || '200', 10);
+        const activities = Array.isArray(data.activities) ? data.activities : [];
+
+        // Always return newest first for dashboard/activity views
+        const sorted = activities
+            .slice()
+            .sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime())
+            .slice(0, limit);
+
+        res.json({ activities: sorted });
     } catch (error) {
         res.json({ activities: [] });
+    }
+});
+
+// Get Orchestrator Cron Job Stats
+app.get('/api/orchestrator-cron', (req, res) => {
+    try {
+        let nextRunAtMs = null;
+        let lastRunAtMs = null;
+        let jobName = 'Orchestrator Delegation Scan (10m)';
+        
+        try {
+            const { execSync } = require('child_process');
+            const output = execSync(`curl -s 'http://localhost:7777/api/gateway/cron/list' 2>/dev/null || true`, { 
+                encoding: 'utf8',
+                timeout: 2000,
+                maxBuffer: 1024 * 1024
+            }).trim();
+            
+            if (output && output.startsWith('{')) {
+                const parsed = JSON.parse(output);
+                if (parsed.jobs && Array.isArray(parsed.jobs)) {
+                    const orchJob = parsed.jobs.find(j => 
+                        j.agentId === 'orchestrator' && 
+                        (j.name?.includes('delegation') || j.name?.includes('scan'))
+                    );
+                    if (orchJob?.state) {
+                        nextRunAtMs = orchJob.state.nextRunAtMs;
+                        lastRunAtMs = orchJob.state.lastRunAtMs;
+                        jobName = orchJob.name || jobName;
+                    }
+                }
+            }
+        } catch (e) {
+            // Gateway unavailable or timeout, fallback
+        }
+        
+        // Fallback: Calculate from last activity event
+        if (!nextRunAtMs || nextRunAtMs < Date.now()) {
+            try {
+                const activityContent = fs.readFileSync(activityFile, 'utf8');
+                const activityData = JSON.parse(activityContent);
+                const activities = (activityData.activities || []);
+                
+                const lastEvent = activities.find(a => 
+                    (a.message || '').includes('🫀 Orchestrator:')
+                );
+                
+                if (lastEvent && lastEvent.timestamp) {
+                    const lastTs = new Date(lastEvent.timestamp).getTime();
+                    lastRunAtMs = lastTs;
+                    // Calculate next run: last + 10min, or if that's in past, align to next 10-min boundary
+                    let nextTs = lastTs + (10 * 60 * 1000);
+                    const now = Date.now();
+                    if (nextTs < now) {
+                        // Jump to next 10-min boundary from now
+                        const intervalMs = 10 * 60 * 1000;
+                        nextTs = Math.ceil(now / intervalMs) * intervalMs;
+                    }
+                    nextRunAtMs = nextTs;
+                } else {
+                    // No last event found, estimate next run at next 10-min boundary
+                    const intervalMs = 10 * 60 * 1000;
+                    nextRunAtMs = Math.ceil(Date.now() / intervalMs) * intervalMs;
+                }
+            } catch (e) {
+                // Fallback failed, use next 10-min boundary
+                const intervalMs = 10 * 60 * 1000;
+                nextRunAtMs = Math.ceil(Date.now() / intervalMs) * intervalMs;
+            }
+        }
+        
+        res.json({
+            nextRunAtMs,
+            lastRunAtMs,
+            intervalMs: 600000,
+            status: nextRunAtMs ? 'active' : 'unknown',
+            jobName
+        });
+    } catch (error) {
+        res.json({
+            nextRunAtMs: null,
+            lastRunAtMs: null,
+            intervalMs: 600000,
+            status: 'error',
+            jobName: 'Orchestrator Delegation Scan (10m)',
+            error: error.message
+        });
     }
 });
 
@@ -265,10 +564,62 @@ app.get('/api/agent-status', (req, res) => {
             const data = JSON.parse(fs.readFileSync(agentStatusFile, 'utf8'));
             res.json(data);
         } else {
-            res.json({ status: 'available', task: null, updatedAt: new Date().toISOString() });
+            res.json({ status: 'available', text: 'Verfügbar', updatedAt: new Date().toISOString() });
         }
     } catch (error) {
-        res.json({ status: 'available', task: null, updatedAt: new Date().toISOString() });
+        res.json({ status: 'available', text: 'Verfügbar', updatedAt: new Date().toISOString() });
+    }
+});
+
+// GET active subagents
+app.get('/api/subagents', (req, res) => {
+    try {
+        const agentsDir = '/Users/jeff/.openclaw/agents';
+        const subagents = [];
+
+        if (fs.existsSync(agentsDir)) {
+            const agents = fs.readdirSync(agentsDir).filter(a => a !== 'main' && !a.startsWith('.'));
+
+            for (const agentId of agents) {
+                const sessionFile = path.join(agentsDir, agentId, 'sessions', 'sessions.json');
+                let status = 'idle';
+                let lastUpdate = null;
+                let id = `agent:${agentId}:main`;
+
+                if (fs.existsSync(sessionFile)) {
+                    const data = JSON.parse(fs.readFileSync(sessionFile, 'utf8'));
+                    const sessions = Array.isArray(data.sessions)
+                        ? data.sessions
+                        : Object.entries(data).map(([key, val]) => ({ key, ...val }));
+
+                    const recent = sessions
+                        .filter(s => s && s.updatedAt)
+                        .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
+
+                    if (recent) {
+                        id = recent.key || id;
+                        lastUpdate = new Date(recent.updatedAt).toISOString();
+                        const age = Date.now() - recent.updatedAt;
+
+                        if (recent.abortedLastRun) status = 'error';
+                        else if (age < 5 * 60 * 1000) status = 'working';
+                        else status = 'idle';
+                    }
+                }
+
+                subagents.push({
+                    id,
+                    name: agentId.toUpperCase(),
+                    status,
+                    lastUpdate
+                });
+            }
+        }
+
+        res.json({ subagents });
+    } catch (error) {
+        console.error('Subagent fetch error:', error);
+        res.json({ subagents: [] });
     }
 });
 
@@ -290,26 +641,36 @@ app.post('/api/agent-status', (req, res) => {
 // Add new activity entry
 app.post('/api/activity', (req, res) => {
     try {
-        const activityFile = path.join(__dirname, 'activity.json');
         let data = { activities: [] };
-        
+
         if (fs.existsSync(activityFile)) {
             data = JSON.parse(fs.readFileSync(activityFile, 'utf8'));
         }
-        
+
+        const title = req.body.title || null;
+        const message = req.body.message || null;
+        const description = req.body.description || null;
+
+        if (!title && !message && !description) {
+            return res.status(400).json({ error: 'title, message oder description erforderlich' });
+        }
+
         const newActivity = {
             id: String(Date.now()),
             timestamp: new Date().toISOString(),
             type: req.body.type || 'update',
-            title: req.body.title,
-            description: req.body.description,
+            title,
+            message,
+            description,
             status: req.body.status || 'completed',
             project: req.body.project || null
         };
-        
-        data.activities.push(newActivity);
-        fs.writeFileSync(activityFile, JSON.stringify(data, null, 2));
-        
+
+        // newest first
+        data.activities.unshift(newActivity);
+        writeActivityData(data);
+        createSnapshotBackup();
+
         res.json({ success: true, activity: newActivity });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -480,7 +841,23 @@ app.post('/api/projects/:projectId/sync-features', (req, res) => {
 // Context Files API (Agent Configuration)
 // ==========================================
 
-const WORKSPACE_PATH = process.env.OPENCLAW_WORKSPACE || '/data/.openclaw/workspace';
+const WORKSPACE_PATH = process.env.OPENCLAW_WORKSPACE || '/Users/jeff/.openclaw/workspace';
+const AGENTS_BASE_PATH = '/Users/jeff/.openclaw/agents';
+
+function resolveWorkspacePath(agentParam) {
+    if (!agentParam || agentParam === 'main') return WORKSPACE_PATH;
+
+    // Supports values like: "orchestrator" or "agent:orchestrator:main"
+    const parts = String(agentParam).split(':');
+    const agentId = parts.length >= 2 ? parts[1] : agentParam;
+
+    const candidate = path.join(AGENTS_BASE_PATH, agentId, 'workspace');
+    if (fs.existsSync(candidate)) return candidate;
+
+    // Fallback to main workspace if unknown
+    return WORKSPACE_PATH;
+}
+
 const CONTEXT_FILES = [
     { name: 'MEMORY.md', description: 'Langzeit-Gedächtnis & Notizen' },
     { name: 'AGENTS.md', description: 'Agent-Verhaltensregeln' },
@@ -493,8 +870,9 @@ const CONTEXT_FILES = [
 
 // GET all context files
 app.get('/api/context-files', (req, res) => {
+    const workspacePath = resolveWorkspacePath(req.query.agent);
     const files = CONTEXT_FILES.map(file => {
-        const filePath = path.join(WORKSPACE_PATH, file.name);
+        const filePath = path.join(workspacePath, file.name);
         let exists = false;
         let size = 0;
         let modifiedAt = null;
@@ -522,14 +900,15 @@ app.get('/api/context-files', (req, res) => {
 // GET single context file content
 app.get('/api/context-files/:filename', (req, res) => {
     const { filename } = req.params;
-    
+
     // Security: Only allow predefined files
     const allowed = CONTEXT_FILES.find(f => f.name === filename);
     if (!allowed) {
         return res.status(403).json({ error: 'Datei nicht erlaubt' });
     }
-    
-    const filePath = path.join(WORKSPACE_PATH, filename);
+
+    const workspacePath = resolveWorkspacePath(req.query.agent);
+    const filePath = path.join(workspacePath, filename);
     
     try {
         const content = fs.readFileSync(filePath, 'utf8');
@@ -560,18 +939,19 @@ app.get('/api/context-files/:filename', (req, res) => {
 app.put('/api/context-files/:filename', (req, res) => {
     const { filename } = req.params;
     const { content } = req.body;
-    
+
     // Security: Only allow predefined files
     const allowed = CONTEXT_FILES.find(f => f.name === filename);
     if (!allowed) {
         return res.status(403).json({ error: 'Datei nicht erlaubt' });
     }
-    
+
     if (typeof content !== 'string') {
         return res.status(400).json({ error: 'Content required' });
     }
-    
-    const filePath = path.join(WORKSPACE_PATH, filename);
+
+    const workspacePath = resolveWorkspacePath(req.query.agent);
+    const filePath = path.join(workspacePath, filename);
     
     try {
         fs.writeFileSync(filePath, content, 'utf8');
@@ -819,6 +1199,410 @@ app.put('/api/projects/:id/files/*', (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// ==========================================
+// Orchestrator Delegation Logic (NEW)
+// ==========================================
+
+// Helper: Check if agent is busy (has active sub-agent sessions)
+function isAgentBusy(agentId) {
+    try {
+        const sessionDir = path.join(AGENTS_BASE_PATH, agentId, 'sessions');
+        if (!fs.existsSync(sessionDir)) return false;
+
+        const sessionFiles = fs.readdirSync(sessionDir).filter(f => f.endsWith('.jsonl'));
+        
+        // Check for recent activity (within last 5 min)
+        const now = Date.now();
+        const recentSessions = sessionFiles.filter(f => {
+            const filePath = path.join(sessionDir, f);
+            try {
+                const stats = fs.statSync(filePath);
+                return (now - stats.mtimeMs) < 5 * 60 * 1000;
+            } catch {
+                return false;
+            }
+        });
+
+        return recentSessions.length > 0;
+    } catch (err) {
+        console.error(`[AGENT] Error checking busy status for ${agentId}:`, err.message);
+        return false;
+    }
+}
+
+// GET: Next task to delegate (sorted by priority + date)
+app.get('/api/orchestrator/next-task', (req, res) => {
+    try {
+        const data = readData();
+        let nextTask = null;
+        let project = null;
+
+        // Iterate all projects, find oldest offen task (ignore hintl)
+        for (const p of data.projects) {
+            const offenTasks = p.tasks.filter(t => 
+                normalizeStatus(t.status) === 'offen' && 
+                !t.hintl
+            );
+
+            // Sort by: priority (P0 > P1 > P2) then by date (oldest first)
+            const sorted = offenTasks.sort((a, b) => {
+                const prioOrder = { 'high': 0, 'medium': 1, 'low': 2 };
+                const prioA = prioOrder[a.priority] ?? 1;
+                const prioB = prioOrder[b.priority] ?? 1;
+                if (prioA !== prioB) return prioA - prioB;
+                return new Date(a.date || '2099-01-01') - new Date(b.date || '2099-01-01');
+            });
+
+            if (sorted.length > 0) {
+                nextTask = sorted[0];
+                project = p;
+                break;
+            }
+        }
+
+        if (!nextTask || !project) {
+            return res.json({ 
+                task: null, 
+                project: null,
+                message: 'Keine offenen Tasks gefunden' 
+            });
+        }
+
+        res.json({
+            task: nextTask,
+            project: {
+                id: project.id,
+                name: project.name,
+                projectPath: project.projectPath
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST: Delegate single task to agent (offen → in-progress)
+app.post('/api/orchestrator/delegate', (req, res) => {
+    try {
+        const { projectId, taskId, agentId } = req.body;
+
+        if (!projectId || !taskId || !agentId) {
+            return res.status(400).json({ 
+                error: 'projectId, taskId, agentId erforderlich' 
+            });
+        }
+
+        // Validate agent
+        if (!['codeagent', 'revagent'].includes(agentId.toLowerCase())) {
+            return res.status(400).json({ 
+                error: 'Invalid agentId (must be codeagent or revagent)' 
+            });
+        }
+
+        const data = readData();
+        const project = data.projects.find(p => p.id === projectId);
+        if (!project) {
+            return res.status(404).json({ error: 'Project not found' });
+        }
+
+        const taskIndex = project.tasks.findIndex(t => t.id === taskId);
+        if (taskIndex === -1) {
+            return res.status(404).json({ error: 'Task not found' });
+        }
+
+        const task = project.tasks[taskIndex];
+
+        // Check agent busy
+        const busy = isAgentBusy(agentId);
+        if (busy) {
+            // Log warning
+            try {
+                let activityData = { activities: [] };
+                if (fs.existsSync(activityFile)) {
+                    activityData = JSON.parse(fs.readFileSync(activityFile, 'utf8'));
+                }
+                activityData.activities.unshift({
+                    id: String(Date.now()),
+                    timestamp: new Date().toISOString(),
+                    type: 'warning',
+                    message: `⏸️ Orchestrator: Delegation skipped - ${agentId.toUpperCase()} busy; retry next heartbeat`,
+                    project: projectId,
+                    status: 'completed'
+                });
+                writeActivityData(activityData);
+            } catch (err) {
+                console.error('[ACTIVITY] Failed to log busy status:', err.message);
+            }
+
+            return res.json({
+                success: false,
+                reason: 'agent_busy',
+                message: `${agentId.toUpperCase()} ist noch mit einer anderen Task beschäftigt`
+            });
+        }
+
+        // Set task to in-progress
+        const agentMap = { 'codeagent': 'CODEAGENT', 'revagent': 'REVAGENT' };
+        task.status = 'in-progress';
+        task.assignedAgent = agentMap[agentId.toLowerCase()];
+        task.delegatedAt = new Date().toISOString();
+        task.delegatedToAgent = agentId.toLowerCase();
+
+        writeData(data);
+
+        // Log delegation
+        try {
+            let activityData = { activities: [] };
+            if (fs.existsSync(activityFile)) {
+                activityData = JSON.parse(fs.readFileSync(activityFile, 'utf8'));
+            }
+            activityData.activities.unshift({
+                id: String(Date.now()),
+                timestamp: new Date().toISOString(),
+                type: 'delegation',
+                message: `🎯 Orchestrator: Delegating "${task.title}" to ${agentMap[agentId.toLowerCase()]}`,
+                description: `Project: ${project.name} (${projectId}) | Task: ${taskId} | Agent: ${agentId}`,
+                project: projectId,
+                projectName: project.name,
+                taskId: taskId,
+                agentId: agentId,
+                status: 'delegated'
+            });
+            writeActivityData(activityData);
+        } catch (err) {
+            console.error('[ACTIVITY] Failed to log delegation:', err.message);
+        }
+
+        console.log(`[ORCHESTRATOR] Delegated "${task.title}" (${taskId}) to ${agentId} (Project: ${project.name})`);
+
+        res.json({
+            success: true,
+            task: task,
+            project: { id: project.id, name: project.name },
+            message: `Task delegiert an ${agentMap[agentId.toLowerCase()]}`
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST: Mark task as completed by agent (in-progress → review or done)
+app.post('/api/orchestrator/task-completed', (req, res) => {
+    try {
+        const { projectId, taskId, agentId, targetStatus } = req.body;
+
+        if (!projectId || !taskId || !agentId) {
+            return res.status(400).json({ 
+                error: 'projectId, taskId, agentId erforderlich' 
+            });
+        }
+
+        const data = readData();
+        const project = data.projects.find(p => p.id === projectId);
+        if (!project) {
+            return res.status(404).json({ error: 'Project not found' });
+        }
+
+        const taskIndex = project.tasks.findIndex(t => t.id === taskId);
+        if (taskIndex === -1) {
+            return res.status(404).json({ error: 'Task not found' });
+        }
+
+        const task = project.tasks[taskIndex];
+
+        // CodeAgent completion → review
+        // RevAgent completion → done
+        let nextStatus = 'review';
+        if (agentId.toLowerCase() === 'revagent') {
+            nextStatus = 'done';
+        }
+        if (targetStatus && ['review', 'done'].includes(targetStatus)) {
+            nextStatus = targetStatus;
+        }
+
+        const oldStatus = task.status;
+        task.status = nextStatus;
+        task.completedAt = new Date().toISOString();
+        task.completedByAgent = agentId.toLowerCase();
+
+        writeData(data);
+
+        // Log completion
+        try {
+            let activityData = { activities: [] };
+            if (fs.existsSync(activityFile)) {
+                activityData = JSON.parse(fs.readFileSync(activityFile, 'utf8'));
+            }
+            activityData.activities.unshift({
+                id: String(Date.now()),
+                timestamp: new Date().toISOString(),
+                type: 'system',
+                message: `✅ ${agentId.toUpperCase()}: Completed "${task.title}" → ${nextStatus}`,
+                description: `Project: ${project.name} (${projectId}) | Task: ${taskId}`,
+                project: projectId,
+                projectName: project.name,
+                taskId: taskId,
+                agentId: agentId,
+                status: 'completed'
+            });
+            writeActivityData(activityData);
+        } catch (err) {
+            console.error('[ACTIVITY] Failed to log completion:', err.message);
+        }
+
+        console.log(`[ORCHESTRATOR] Task "${task.title}" (${taskId}) completed by ${agentId} → ${nextStatus}`);
+
+        res.json({
+            success: true,
+            task: task,
+            message: `Task abgeschlossen → ${nextStatus}`
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST: Reject task from review (review → offen, increment counter)
+app.post('/api/orchestrator/task-rejected', (req, res) => {
+    try {
+        const { projectId, taskId } = req.body;
+
+        if (!projectId || !taskId) {
+            return res.status(400).json({ 
+                error: 'projectId, taskId erforderlich' 
+            });
+        }
+
+        const data = readData();
+        const project = data.projects.find(p => p.id === projectId);
+        if (!project) {
+            return res.status(404).json({ error: 'Project not found' });
+        }
+
+        const taskIndex = project.tasks.findIndex(t => t.id === taskId);
+        if (taskIndex === -1) {
+            return res.status(404).json({ error: 'Task not found' });
+        }
+
+        const task = project.tasks[taskIndex];
+
+        // Increment reject counter
+        task.reviewRejectCount = (task.reviewRejectCount || 0) + 1;
+
+        if (task.reviewRejectCount >= 3) {
+            // Mark as HINTL
+            task.hintl = true;
+            task.hintlAt = new Date().toISOString();
+            task.hintlReason = 'REVAGENT rejected task 3 times';
+            task.assignedAgent = 'HINTL';
+            task.status = 'review'; // Stays in review
+
+            writeData(data);
+
+            // Log HINTL
+            try {
+                let activityData = { activities: [] };
+                if (fs.existsSync(activityFile)) {
+                    activityData = JSON.parse(fs.readFileSync(activityFile, 'utf8'));
+                }
+                activityData.activities.unshift({
+                    id: String(Date.now()),
+                    timestamp: new Date().toISOString(),
+                    type: 'warning',
+                    message: `🛑 Orchestrator Guard: "${task.title}" nach 3 Review-Rejections auf HINTL gesetzt`,
+                    description: `Task bleibt in review und wird nicht mehr automatisch delegiert. Manual intervention required.`,
+                    project: projectId,
+                    projectName: project.name,
+                    taskId: taskId,
+                    status: 'completed'
+                });
+                writeActivityData(activityData);
+            } catch (err) {
+                console.error('[ACTIVITY] Failed to log HINTL:', err.message);
+            }
+
+            console.log(`[ORCHESTRATOR] Task "${task.title}" (${taskId}) marked as HINTL (3x rejected)`);
+
+            return res.json({
+                success: true,
+                task: task,
+                status: 'hintl',
+                message: 'Task nach 3 Rejections auf HINTL gesetzt'
+            });
+        }
+
+        // Reset to offen
+        task.status = 'offen';
+        task.assignedAgent = 'CODEAGENT';
+
+        writeData(data);
+
+        // Log rejection
+        try {
+            let activityData = { activities: [] };
+            if (fs.existsSync(activityFile)) {
+                activityData = JSON.parse(fs.readFileSync(activityFile, 'utf8'));
+            }
+            activityData.activities.unshift({
+                id: String(Date.now()),
+                timestamp: new Date().toISOString(),
+                type: 'warning',
+                message: `↩️ REVAGENT: "${task.title}" rejected (${task.reviewRejectCount}/3)`,
+                description: `Project: ${project.name} (${projectId}) | Task: ${taskId}`,
+                project: projectId,
+                projectName: project.name,
+                taskId: taskId,
+                rejectCount: task.reviewRejectCount,
+                status: 'completed'
+            });
+            writeActivityData(activityData);
+        } catch (err) {
+            console.error('[ACTIVITY] Failed to log rejection:', err.message);
+        }
+
+        console.log(`[ORCHESTRATOR] Task "${task.title}" (${taskId}) rejected by REVAGENT (${task.reviewRejectCount}/3)`);
+
+        res.json({
+            success: true,
+            task: task,
+            message: `Task auf "offen" zurückgesetzt (${task.reviewRejectCount}/3 rejections)`
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// GET: All in-progress tasks with their assigned agent and project info
+app.get('/api/orchestrator/in-progress-tasks', (req, res) => {
+    try {
+        const data = readData();
+        const inProgressTasks = [];
+
+        for (const project of data.projects) {
+            const tasks = project.tasks.filter(t => normalizeStatus(t.status) === 'in-progress');
+            for (const task of tasks) {
+                inProgressTasks.push({
+                    projectId: project.id,
+                    projectName: project.name,
+                    projectPath: project.path || null,
+                    taskId: task.id,
+                    taskTitle: task.title,
+                    assignedAgent: task.assignedAgent || null,
+                    delegatedAt: task.delegatedAt || null,
+                    status: task.status
+                });
+            }
+        }
+
+        res.json({ success: true, tasks: inProgressTasks });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Snapshot backup every 10 minutes (even without writes)
+setInterval(() => createSnapshotBackup(true), 10 * 60 * 1000);
 
 // Start server
 app.listen(PORT, HOST, () => {

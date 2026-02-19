@@ -62,7 +62,7 @@ function Activities() {
                   </span>
                 </div>
                 <div className="timeline-body">
-                  <h3>{activity.title}</h3>
+                  <h3>{activity.message || activity.title}</h3>
                   <p>{activity.description}</p>
                   {activity.metadata && (
                     <div className="timeline-meta">

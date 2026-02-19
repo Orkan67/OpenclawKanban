@@ -1,3 +1,131 @@
+/* 🚨 Agent Alert Section */
+.agent-alert-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.agent-alert-section h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+.agent-alert-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.alert-card {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  transition: all 0.15s ease;
+}
+
+.alert-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.alert-card.alert-warning {
+  border-left: 3px solid #f97316;
+  border-color: rgba(249, 115, 22, 0.3);
+  background: rgba(249, 115, 22, 0.05);
+}
+
+.alert-card.alert-info {
+  border-left: 3px solid #3fb950;
+  border-color: rgba(63, 185, 80, 0.3);
+  background: rgba(63, 185, 80, 0.05);
+}
+
+.alert-card.alert-error {
+  border-left: 3px solid #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.alert-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.alert-emoji {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.alert-info {
+  flex: 1;
+}
+
+.alert-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.alert-agent-id {
+  font-size: 0.7rem;
+  font-family: monospace;
+  color: var(--text-secondary);
+  word-break: break-all;
+  line-height: 1.3;
+}
+
+.alert-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.status-badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status-badge.working {
+  background: rgba(249, 115, 22, 0.25);
+  color: #f97316;
+}
+
+.status-badge.idle {
+  background: rgba(63, 185, 80, 0.25);
+  color: #3fb950;
+}
+
+.status-badge.error {
+  background: rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+}
+
+.alert-time {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.alert-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
 .dashboard-page {
   padding: 2rem;
   max-width: 1400px;
@@ -24,7 +152,90 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Agent Status Widget */
+.agent-status-widget {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
   margin-bottom: 3rem;
+}
+
+.agent-status-widget h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.agent-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.agent-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.agent-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.agent-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.agent-emoji {
+  font-size: 1.5rem;
+}
+
+.agent-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.agent-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.agent-model {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.agent-status {
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.agent-status.idle {
+  background: rgba(63, 185, 80, 0.15);
+  color: #3fb950;
+}
+
+.agent-status.working {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
 }
 
 .stat-card {
@@ -160,6 +371,76 @@
 .activity-status.completed {
   background: rgba(63, 185, 80, 0.1);
   color: var(--success);
+}
+
+/* Activity Item Types */
+.activity-item.activity-delegation {
+  border-left: 3px solid #f97316;
+}
+
+.activity-item.activity-system {
+  border-left: 3px solid #8b5cf6;
+}
+
+.activity-item.activity-warning {
+  border-left: 3px solid #ef4444;
+}
+
+.activity-message {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+}
+
+.activity-badge {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.activity-badge.completed {
+  background: rgba(63, 185, 80, 0.2);
+  color: #3fb950;
+}
+
+.activity-badge.delegated {
+  background: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+}
+
+.activity-badge.warning {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+/* Agent Card Variations */
+.agent-card.empty {
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.agent-card.agent-working {
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  background: rgba(249, 115, 22, 0.05);
+}
+
+.agent-card.agent-idle {
+  border: 1px solid rgba(63, 185, 80, 0.3);
+  background: rgba(63, 185, 80, 0.05);
+}
+
+.agent-timestamp {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
 }
 
 @media (max-width: 1200px) {

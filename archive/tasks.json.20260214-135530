@@ -1,0 +1,366 @@
+{
+  "projects": [
+    {
+      "id": "proj-781009e1",
+      "name": "TypeMaster",
+      "description": "Typing Speed Trainer - Eine Web-App zum Verbessern der Tipp-Geschwindigkeit und Genauigkeit, inspiriert von MonkeyType",
+      "docs": "# TypeMaster",
+      "color": "#56ae8d",
+      "tasks": [
+        {
+          "id": "75551a2e",
+          "title": "UI Design & Layout",
+          "description": "Haupt-Layout mit Typing-Area, Timer, WPM-Anzeige und Genauigkeits-Stats",
+          "status": "in-progress",
+          "priority": "high",
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T11:40:00.456Z"
+        },
+        {
+          "id": "a56431e6",
+          "title": "Text Generator & Wort-Datenbank",
+          "description": "Zufällige Wörter/Texte generieren mit verschiedenen Schwierigkeitsstufen",
+          "status": "review",
+          "priority": "high",
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T11:40:03.918Z"
+        },
+        {
+          "id": "65f948e3",
+          "title": "Echtzeit-Typing Logik",
+          "description": "Tastatur-Input erfassen, WPM/Accuracy berechnen, Fehler-Highlighting",
+          "status": "review",
+          "priority": "high",
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T11:40:07.473Z"
+        },
+        {
+          "id": "ccb498e6",
+          "title": "Stats & Fortschritts-Tracking",
+          "description": "WPM-Verlauf, Personal Best, Durchschnitt, Grafiken",
+          "status": "review",
+          "priority": "medium",
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T11:40:10.647Z"
+        },
+        {
+          "id": "166ecc66",
+          "title": "Settings & Customization",
+          "description": "Dark Mode, Soundeffekte, Timer-Länge, Schwierigkeitsgrad",
+          "status": "done",
+          "priority": "low",
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T11:40:13.752Z"
+        }
+      ],
+      "createdAt": "2026-02-12T11:39:53.963Z",
+      "projectPath": "/Users/jeff/CODE/monkeytype-clone"
+    },
+    {
+      "id": "proj-66dbd717",
+      "name": "Tienstcraft MVP",
+      "description": "Handwerker-Plattform mit AI-Preisschätzung, Vision-Pipeline und Firebase-Backend. Flutter Cross-Platform App.",
+      "docs": "# Tienstcraft MVP\n\nEin komplexes Multi-Agenten-System für die Handwerker-Vermittlung.\n\n## Tech Stack\n- **Frontend:** Flutter (iOS, Android, macOS, Web)\n- **Backend:** Firebase Cloud Functions (TypeScript)\n- **AI:** Google Gemini (Vision & Estimation)\n- **Services:** Stripe Payments, Real-time Chat",
+      "projectPath": "/Users/jeff/CODE/tienstcraft_mvp",
+      "color": "#361c37",
+      "tasks": [],
+      "createdAt": "2026-02-12T20:06:21.745Z"
+    },
+    {
+      "id": "proj-c1c2ebc6",
+      "name": "Kepi traut sich was",
+      "description": "Premium Bilderbuch (8.5x8.5) für 3lingu. Thema: Kepi, ein Mädchen das lernt, dass ihre drei Sprachen (DE/TR/EN) ein Super-Werkzeugkasten sind.",
+      "docs": "# Kepi traut sich was\n\n## Charakter-Design\n- **Kepi:** Wilde Locken, modern, liebt Dinosaurier UND Prinzessinnen. Keine Stereotypen.\n\n## Konzept\n- **Problem:** Angst vor Fehlern beim Sprach-Mischmasch.\n- **Wendung:** Kepi hilft jemandem durch ihre Mehrsprachigkeit.\n- **Sprachen:** Deutsch, Türkisch, Englisch.\n\n## Design\n- 8.5x8.5 KDP Format.\n- Farbcodes: Blau (DE), Rot (TR), Grün (EN).",
+      "projectPath": "/Users/jeff/CODE/kepi-storybook",
+      "color": "#a386ec",
+      "tasks": [
+        {
+          "id": "452d2359",
+          "title": "Foundation Architecture",
+          "description": "Erstellung der Projektstruktur, README, WORKFLOW und STATUS-REPORT.",
+          "status": "done",
+          "priority": "high",
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T21:29:02.374Z"
+        },
+        {
+          "id": "3da633dd",
+          "title": "24-Page Story Arc",
+          "description": "Detaillierte Planung von 24 emotionalen Szenen.\n\nACT I: The Silent Cub (P 1-6)\nACT II: The Journey (P 7-18)\nACT III: The Voice Found (P 19-24)\n\nJede Seite hat spezifische Illustration-Briefs und Textvorgaben für DE, TR und EN.",
+          "status": "done",
+          "priority": "high",
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T21:29:02.388Z"
+        },
+        {
+          "id": "d09080db",
+          "title": "Character Design Profile",
+          "description": "Definition von Kepi: Weiße Haut, braune Augen, schulterlanges braunes Haar. Der violette Dinosaurier-Hoodie bleibt ihr Markenzeichen. Master-Prompts für Gemini wurden entsprechend angepasst.",
+          "status": "done",
+          "priority": "high",
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T21:29:02.398Z"
+        },
+        {
+          "id": "a09705e1",
+          "title": "Page 1 Trilingual Text",
+          "description": "Seite 1 Text:\nDE: In der weiten Savanne...\nTR: Güneşin gökyüzünü...\nEN: In the wide savanna...\n\nIllustration: Leo silhouettiert gegen den Sonnenaufgang.",
+          "status": "done",
+          "priority": "medium",
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T21:29:02.405Z"
+        },
+        {
+          "id": "cf54189d",
+          "title": "Master Character Sheet Generation",
+          "description": "Generierung des visuellen Referenzblattes in Gemini.",
+          "status": "done",
+          "priority": "high",
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T21:29:02.413Z"
+        },
+        {
+          "id": "3d32303f",
+          "title": "Page 1 Production: Kepi's Three Worlds",
+          "description": "Illustration der ersten Seite basierend auf dem Master Sheet v2. Text in DE, TR, EN integrieren und Bild in /pages/ speichern.",
+          "status": "in-progress",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "12.2.2026",
+          "createdAt": "2026-02-12T22:56:39.101Z"
+        },
+        {
+          "id": "6637c1ac",
+          "title": "Page 2 Production: The Mix-up",
+          "description": "At school, Kepi accidentally uses Turkish word when speaking German. Trilingual text + illustration.",
+          "status": "in-progress",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:30.932Z"
+        },
+        {
+          "id": "8a3aefa7",
+          "title": "Page 3 Production: Feeling Different",
+          "description": "Kepi sitting alone at recess, watching other kids play. Trilingual text + illustration.",
+          "status": "in-progress",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:30.949Z"
+        },
+        {
+          "id": "d8a979bd",
+          "title": "Page 4 Production: The Trigger Moment",
+          "description": "Kepi struggles to find the RIGHT word in the RIGHT language. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:30.961Z"
+        },
+        {
+          "id": "5548f3ee",
+          "title": "Page 5 Production: Doubt Creeps In",
+          "description": "Evening, Kepi looks at herself in mirror. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:30.971Z"
+        },
+        {
+          "id": "63922bbc",
+          "title": "Page 6 Production: The Wish",
+          "description": "Kepi at bedtime, looking at stars. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:30.979Z"
+        },
+        {
+          "id": "010cf8f8",
+          "title": "Page 7 Production: The Helper Appears",
+          "description": "Oma visits, speaks to Kepi in Turkish. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:30.987Z"
+        },
+        {
+          "id": "ac134eed",
+          "title": "Page 8 Production: Oma’s Story",
+          "description": "Oma tells story of her own language journey. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:30.993Z"
+        },
+        {
+          "id": "5a866e41",
+          "title": "Page 9 Production: The First Superpower",
+          "description": "Kepi helps a lost English-speaking tourist. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:30.998Z"
+        },
+        {
+          "id": "f14907a1",
+          "title": "Page 10 Production: Confidence Flicker",
+          "description": "Kepi translates between her Turkish friend and German friend. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:31.004Z"
+        },
+        {
+          "id": "edbfa9b7",
+          "title": "Page 11 Production: The Experiment",
+          "description": "Kepi starts CODE-SWITCHING on purpose. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:31.009Z"
+        },
+        {
+          "id": "e9d62380",
+          "title": "Page 12 Production: Small Victory",
+          "description": "Teacher praises Kepi for helping new student. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:31.014Z"
+        },
+        {
+          "id": "5d072ffa",
+          "title": "Page 13 Production: Naming the Powers",
+          "description": "Kepi creates Language Superhero persona. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:31.019Z"
+        },
+        {
+          "id": "91bc158d",
+          "title": "Page 14 Production: The Challenge",
+          "description": "School talent show announced - Kepi wants to participate. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:31.023Z"
+        },
+        {
+          "id": "28992744",
+          "title": "Page 15 Production: Preparing the Toolkit",
+          "description": "Kepi creates presentation using all three languages. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:31.028Z"
+        },
+        {
+          "id": "3cade848",
+          "title": "Page 16 Production: Last-Minute Doubt",
+          "description": "Night before talent show, Kepi almost backs out. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:31.032Z"
+        },
+        {
+          "id": "8d342525",
+          "title": "Page 17 Production: Family Support",
+          "description": "Family gives encouragement in all three languages. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:31.037Z"
+        },
+        {
+          "id": "5aa4c4e4",
+          "title": "Page 18 Production: The Performance",
+          "description": "Kepi on stage, showcasing her trilingual poem/story. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:31.042Z"
+        },
+        {
+          "id": "da8b69b1",
+          "title": "Page 19 Production: Applause & Acceptance",
+          "description": "Classmates clap, some ask questions about languages. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:31.046Z"
+        },
+        {
+          "id": "b91cb834",
+          "title": "Page 20 Production: The Ripple Effect",
+          "description": "Other multilingual kids approach Kepi, feel seen. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:31.051Z"
+        },
+        {
+          "id": "37365726",
+          "title": "Page 21 Production: New Friendships",
+          "description": "Kepi forms Language Club with other multilingual kids. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:31.056Z"
+        },
+        {
+          "id": "c552bcd6",
+          "title": "Page 22 Production: The Integration",
+          "description": "Kepi code-switches naturally, everyone accepts it. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:31.061Z"
+        },
+        {
+          "id": "5991b3b0",
+          "title": "Page 23 Production: Teaching Moment",
+          "description": "Kepi teaches classmates words in Turkish and shares culture. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:31.066Z"
+        },
+        {
+          "id": "944f8ed0",
+          "title": "Page 24 Production: The New Wish",
+          "description": "Kepi at bedtime, looking at stars again. Trilingual text + illustration.",
+          "status": "todo",
+          "priority": "high",
+          "assignedAgent": "KBAGENT",
+          "date": "13.2.2026",
+          "createdAt": "2026-02-12T23:02:31.070Z"
+        }
+      ],
+      "createdAt": "2026-02-12T21:19:02.133Z"
+    }
+  ]
+}

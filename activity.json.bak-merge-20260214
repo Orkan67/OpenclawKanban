@@ -1,0 +1,201 @@
+{
+  "activities": [
+    {
+      "id": "act-018",
+      "title": "Brave Search API eingerichtet",
+      "description": "Brave Search API Key konfiguriert und web_search Tool aktiviert.",
+      "status": "CONFIGURED",
+      "timestamp": "2026-02-12T11:25:00.000Z",
+      "projectName": "OpenClaw",
+      "actor": "Jeff"
+    },
+    {
+      "id": "act-019",
+      "title": "Whisper lokal installiert",
+      "description": "openai-whisper via Homebrew installiert für lokale Voice-Transkription.",
+      "status": "INSTALLED",
+      "timestamp": "2026-02-12T11:51:00.000Z",
+      "projectName": "OpenClaw",
+      "actor": "Jeff"
+    },
+    {
+      "id": "act-020",
+      "title": "iMessage CLI integriert",
+      "description": "imsg Tool installiert und Testnachricht an 'Die Königin' gesendet.",
+      "status": "INTEGRATED",
+      "timestamp": "2026-02-12T11:56:00.000Z",
+      "projectName": "OpenClaw",
+      "actor": "Jeff"
+    },
+    {
+      "id": "act-021",
+      "title": "Monkeytype-Clone gebaut",
+      "description": "Vollständige React + Vite + Tailwind App in /Users/jeff/CODE/monkeytype-clone erstellt.",
+      "status": "BUILT",
+      "timestamp": "2026-02-12T13:35:00.000Z",
+      "projectName": "Monkeytype Clone",
+      "actor": "Jeff"
+    },
+    {
+      "id": "act-022",
+      "title": "Kanban Board geklont",
+      "description": "OpenclawKanban Repository von GitHub geklont und lokal aufgesetzt.",
+      "status": "DEPLOYED",
+      "timestamp": "2026-02-12T13:45:00.000Z",
+      "projectName": "Kanban Board",
+      "actor": "Jeff"
+    },
+    {
+      "id": "act-023",
+      "title": "Kanban Board optimiert",
+      "description": "Identität zu 'Jeff' geändert, Projekt-Erstellung gefixt und Pfad-Logik angepasst.",
+      "status": "UPDATED",
+      "timestamp": "2026-02-12T20:00:00.000Z",
+      "projectName": "Kanban Board",
+      "actor": "Jeff"
+    },
+    {
+      "id": "1770928875616",
+      "timestamp": "2026-02-12T20:41:15.616Z",
+      "type": "update",
+      "title": "KBAgent spawnt",
+      "description": "KBAgent wurde aktiviert für das Projekt: Mutig in drei Sprachen.",
+      "status": "active",
+      "project": "Mutig in drei Sprachen: Der kleine Löwe"
+    },
+    {
+      "id": "1770928881674",
+      "timestamp": "2026-02-12T20:41:21.674Z",
+      "type": "update",
+      "title": "Story-Architektur geplant",
+      "description": "24 emotionale Szenen für das Kinderbuch wurden entworfen und dokumentiert.",
+      "status": "completed",
+      "project": "Mutig in drei Sprachen: Der kleine Löwe"
+    },
+    {
+      "id": "1770929818689",
+      "timestamp": "2026-02-12T20:56:58.689Z",
+      "type": "update",
+      "title": "Storybook Gem aktiviert",
+      "description": "KBAgent hat das offizielle Storybook-Gem in Gemini gestartet und den 24-Seiten-Prompt abgesetzt.",
+      "status": "active",
+      "project": "Mutig in drei Sprachen: Der kleine Löwe"
+    },
+    {
+      "id": "1770930038916",
+      "timestamp": "2026-02-12T21:00:38.916Z",
+      "type": "update",
+      "title": "Storybook fertiggestellt",
+      "description": "KBAgent hat das 24-seitige trilinguale Buch erfolgreich in Gemini generiert und verifiziert.",
+      "status": "completed",
+      "project": "Mutig in drei Sprachen: Der kleine Löwe"
+    },
+    {
+      "id": "1770931754717",
+      "timestamp": "2026-02-12T21:29:14.717Z",
+      "type": "update",
+      "title": "Kepi-Architektur geplant",
+      "description": "24 emotionale Beats (Story-Arc) für Kepi wurden erfolgreich gemappt.",
+      "status": "completed",
+      "project": "Kepi traut sich was"
+    },
+    {
+      "id": "1770931754729",
+      "timestamp": "2026-02-12T21:29:14.729Z",
+      "type": "update",
+      "title": "Kepi Charakter Design",
+      "description": "Definition von Kepis Merkmalen (Locken, Dino-Hoodie) und Vorbereitung der Master-Prompts.",
+      "status": "completed",
+      "project": "Kepi traut sich was"
+    },
+    {
+      "id": "1770934252953",
+      "timestamp": "2026-02-12T22:10:52.953Z",
+      "type": "update",
+      "title": "Feedback erhalten: Kepi Design",
+      "description": "Orkan wünscht Änderungen am Charakter-Design: Weiße Haut, braune Augen, schulterlanges braunes Haar. Planung wird angepasst.",
+      "status": "active",
+      "project": "Kepi traut sich was"
+    },
+    {
+      "id": "1770935707344",
+      "timestamp": "2026-02-12T22:35:07.344Z",
+      "type": "update",
+      "title": "Feedback eingearbeitet: Kepi Charakter-Update",
+      "description": "User-Feedback erhalten: Kepi hat nun weiße Haut, braune Augen und schulterlanges braunes Haar. Master-Sheet wird neu generiert.",
+      "status": "updated",
+      "project": "Kepi traut sich was"
+    },
+    {
+      "id": "1770935795827",
+      "timestamp": "2026-02-12T22:36:35.827Z",
+      "type": "update",
+      "title": "Kepi Design korrigiert & Generation gestartet",
+      "description": "Charakter-Profil auf weiße Haut und braune Haare angepasst. KBAgent generiert nun das neue Master Sheet v2.",
+      "status": "active",
+      "project": "Kepi traut sich was"
+    },
+    {
+      "id": "1770935866000",
+      "timestamp": "2026-02-12T22:37:46.000Z",
+      "type": "update",
+      "title": "Master Character Sheet V2 Generation Started",
+      "description": "KBAgent started generating the NEW Master Character Sheet for Kepi (v2) in Google Gemini with updated details (Turkish-German, brown curls, brown eyes).",
+      "status": "in-progress",
+      "project": "Kepi traut sich was"
+    },
+    {
+      "id": "1770936056000",
+      "timestamp": "2026-02-12T22:42:00.000Z",
+      "type": "update",
+      "title": "Master Character Sheet Generated (Pending Download)",
+      "description": "KBAgent generated the NEW Master Character Sheet for Kepi (v2) in Google Gemini. The image is ready in the chat history but requires manual download due to browser disconnect.",
+      "status": "completed",
+      "project": "Kepi traut sich was"
+    },
+    {
+      "id": "1770936116000",
+      "timestamp": "2026-02-12T22:45:00.000Z",
+      "type": "update",
+      "title": "Master Character Sheet Saved",
+      "description": "KBAgent recovered the Gemini output (from Downloads) and saved it as assets/master_kepi_v2.png. Task fully complete.",
+      "status": "completed",
+      "project": "Kepi traut sich was"
+    },
+    {
+      "id": "1770940513438",
+      "timestamp": "2026-02-12T23:55:13.438Z",
+      "type": "system",
+      "status": "completed",
+      "project": null
+    },
+    {
+      "id": "1770940544838",
+      "timestamp": "2026-02-12T23:55:44.838Z",
+      "type": "warning",
+      "status": "completed",
+      "project": null
+    },
+    {
+      "id": "1770940717907",
+      "timestamp": "2026-02-12T23:58:37.907Z",
+      "type": "system",
+      "status": "completed",
+      "project": null
+    },
+    {
+      "id": "1771073124321",
+      "timestamp": "2026-02-14T12:45:24.321Z",
+      "type": "system",
+      "status": "completed",
+      "project": null
+    },
+    {
+      "id": "1771073400029",
+      "timestamp": "2026-02-14T12:50:00.029Z",
+      "type": "system",
+      "status": "completed",
+      "project": null
+    }
+  ]
+}
