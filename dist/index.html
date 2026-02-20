@@ -1741,15 +1741,6 @@
             <div class="dashboard-stats" style="margin-top: 0.2rem; grid-template-columns: 1fr;">
                 <div class="stat-card" id="agentAlertsCombined"><div class="stat-label">Keine aktuellen Warnungen oder Fehler.</div></div>
             </div>
-
-            <div style="margin-top: 1.2rem; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.85rem;">📡 Live Agent Feed</div>
-            <div class="dashboard-stats" style="margin-top: 0.2rem; grid-template-columns: 1fr;">
-                <div class="stat-card" id="agentLiveFeedCard" style="text-align: left; padding: 1rem;">
-                    <div id="agentLiveFeedContainer" style="max-height: 500px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem;">
-                        <div class="stat-label">💤 Lade Agent-Aktivitäten...</div>
-                    </div>
-                </div>
-            </div>
         </div>
         
         <!-- Project Detail Section -->
@@ -2070,9 +2061,6 @@
             return 'UNKNOWN';
         }
 
-        // Alias for backward compatibility
-        const detectAgentFromActivity = getActivityAgentLabel;
-
         function formatRelativeTime(ts) {
             const d = new Date(ts || 0).getTime();
             if (!d) return '-';
@@ -2109,105 +2097,6 @@
             }).join('');
 
             el.innerHTML = `<div class="stat-label" style="color:#ffb3b3; text-align:left; line-height:1.35;">${items}</div>`;
-        }
-
-        function getAgentFeedColor(agent) {
-            const colors = {
-                'CODEAGENT': '#3b82f6',
-                'REVAGENT': '#8b5cf6',
-                'ORCHESTRATOR': '#f97316',
-                'KBAGENT': '#ec4899',
-                'JEFF': '#3fb950'
-            };
-            return colors[agent] || '#6b7280';
-        }
-
-        function formatFeedTime(timestamp) {
-            if (!timestamp) return '';
-            const date = new Date(timestamp);
-            const now = new Date();
-            const diffMs = now - date;
-            const diffSec = Math.floor(diffMs / 1000);
-            const diffMin = Math.floor(diffSec / 60);
-            
-            if (diffSec < 10) return 'gerade eben';
-            if (diffSec < 60) return `vor ${diffSec}s`;
-            if (diffMin < 60) return `vor ${diffMin}m`;
-            return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-        }
-
-        function truncateFeedText(text, max) {
-            max = max || 150;
-            if (!text) return '';
-            const cleaned = text.replace(/^#+\s/gm, '').replace(/\*\*/g, '').trim();
-            if (cleaned.length <= max) return cleaned;
-            return cleaned.substring(0, max) + '…';
-        }
-
-        function escHtml(str) {
-            return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        }
-
-        function renderAgentFeed(feedItems) {
-            const container = document.getElementById('agentLiveFeedContainer');
-            if (!container) return;
-
-            if (!feedItems || feedItems.length === 0) {
-                container.innerHTML = '<div class="stat-label">💤 Keine aktiven Agent-Aktivitäten</div>';
-                return;
-            }
-
-            const html = feedItems.map(item => {
-                const color = getAgentFeedColor(item.agent);
-                const badgeStyle = `background:${color}22;color:${color};border:1px solid ${color}44;padding:0.15rem 0.5rem;border-radius:4px;font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;`;
-                
-                let bodyHtml = '';
-                
-                if (item.text) {
-                    const cleanText = escHtml(truncateFeedText(item.text));
-                    bodyHtml += `<div style="font-size:0.82rem;color:var(--text-primary);line-height:1.45;word-break:break-word;">${cleanText}</div>`;
-                }
-                
-                if (item.toolCalls) {
-                    item.toolCalls.forEach(tc => {
-                        bodyHtml += `<div style="display:flex;align-items:flex-start;gap:0.35rem;padding:0.3rem 0.5rem;background:rgba(249,115,22,0.06);border:1px solid rgba(249,115,22,0.15);border-radius:4px;font-size:0.75rem;margin-top:0.2rem;">
-                            <span style="flex-shrink:0;">⚡</span>
-                            <span style="font-weight:600;color:#f97316;white-space:nowrap;flex-shrink:0;">${escHtml(tc.tool)}</span>
-                            <span style="color:var(--text-secondary);font-family:monospace;font-size:0.7rem;word-break:break-all;line-height:1.35;">${escHtml(truncateFeedText(tc.args, 120))}</span>
-                        </div>`;
-                    });
-                }
-                
-                if (item.toolResult) {
-                    const isErr = item.toolResult.isError;
-                    const bg = isErr ? 'rgba(239,68,68,0.06)' : 'rgba(63,185,80,0.06)';
-                    const border = isErr ? 'rgba(239,68,68,0.15)' : 'rgba(63,185,80,0.15)';
-                    const nameColor = isErr ? '#ef4444' : '#3fb950';
-                    const icon = isErr ? '❌' : '✅';
-                    bodyHtml += `<div style="display:flex;align-items:flex-start;gap:0.35rem;padding:0.3rem 0.5rem;background:${bg};border:1px solid ${border};border-radius:4px;font-size:0.75rem;margin-top:0.2rem;">
-                        <span style="flex-shrink:0;">${icon}</span>
-                        <span style="font-weight:600;color:${nameColor};white-space:nowrap;flex-shrink:0;">${escHtml(item.toolResult.tool)}</span>
-                        <span style="color:var(--text-secondary);font-family:monospace;font-size:0.7rem;word-break:break-all;line-height:1.35;">${escHtml(truncateFeedText(item.toolResult.output, 120))}</span>
-                    </div>`;
-                }
-
-                const labelHtml = item.label ? `<span style="font-size:0.65rem;color:var(--text-secondary);font-family:monospace;background:var(--bg-secondary);padding:0.1rem 0.35rem;border-radius:3px;white-space:nowrap;">${escHtml(item.label)}</span>` : '';
-                const modelHtml = item.model ? `<div style="margin-top:0.2rem;font-size:0.6rem;color:var(--text-secondary);font-family:monospace;opacity:0.7;">${escHtml(item.model)}</div>` : '';
-
-                return `<div style="padding:0.6rem 0.75rem;border:1px solid var(--border);border-radius:6px;background:var(--bg-tertiary);transition:all 0.15s ease;">
-                    <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.35rem;flex-wrap:wrap;">
-                        <span style="${badgeStyle}">${escHtml(item.agent)}</span>
-                        ${labelHtml}
-                        <span style="font-size:0.65rem;color:var(--text-secondary);margin-left:auto;white-space:nowrap;">${formatFeedTime(item.timestamp)}</span>
-                    </div>
-                    <div style="display:flex;flex-direction:column;gap:0.2rem;">
-                        ${bodyHtml}
-                    </div>
-                    ${modelHtml}
-                </div>`;
-            }).join('');
-
-            container.innerHTML = html;
         }
 
         let lastHeartbeatEvents = [];
@@ -2777,28 +2666,13 @@
                     renderCombinedAgentAlerts(all);
                 }
 
-                // Load agent KPIs (outside activity block so it always runs)
-                try {
-                    const agentsResponse = await fetch('/api/subagents');
-                    if (agentsResponse.ok) {
-                        const agentsData = await agentsResponse.json();
-                        const subs = agentsData.subagents || [];
-                        const working = subs.filter(a => (a.status || '').toLowerCase() === 'working').length;
-                        document.getElementById('dashboardWorkingAgents').textContent = String(working);
-                    }
-                } catch (agentErr) {
-                    console.warn('Agent KPI fetch failed:', agentErr);
-                }
-
-                // Load Live Agent Feed
-                try {
-                    const feedResponse = await fetch('/api/agent-feed?limit=25');
-                    if (feedResponse.ok) {
-                        const feedData = await feedResponse.json();
-                        renderAgentFeed(feedData.feed || []);
-                    }
-                } catch (feedErr) {
-                    console.warn('Agent feed fetch failed:', feedErr);
+                // Load agent KPIs
+                const agentsResponse = await fetch('/api/subagents');
+                if (agentsResponse.ok) {
+                    const agentsData = await agentsResponse.json();
+                    const subs = agentsData.subagents || [];
+                    const working = subs.filter(a => (a.status || '').toLowerCase() === 'working').length;
+                    document.getElementById('dashboardWorkingAgents').textContent = String(working);
                 }
                 
                 // Auto-refresh dashboard every 5 seconds

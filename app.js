@@ -623,6 +623,119 @@ app.get('/api/subagents', (req, res) => {
     }
 });
 
+// GET live agent feed — reads recent assistant messages from active agent sessions
+app.get('/api/agent-feed', (req, res) => {
+    try {
+        const agentsDir = '/Users/jeff/.openclaw/agents';
+        const feedItems = [];
+        const limit = parseInt(req.query.limit) || 20;
+
+        if (fs.existsSync(agentsDir)) {
+            const agents = fs.readdirSync(agentsDir).filter(a => a !== 'main' && !a.startsWith('.'));
+
+            for (const agentId of agents) {
+                const sessionsFile = path.join(agentsDir, agentId, 'sessions', 'sessions.json');
+                if (!fs.existsSync(sessionsFile)) continue;
+
+                let sessionsData;
+                try {
+                    sessionsData = JSON.parse(fs.readFileSync(sessionsFile, 'utf8'));
+                } catch { continue; }
+
+                // Get entries from sessions data (it's a dict keyed by session key)
+                const sessions = Object.entries(sessionsData)
+                    .filter(([k, v]) => v && typeof v === 'object' && v.sessionId)
+                    .map(([key, val]) => ({ key, ...val }))
+                    .filter(s => s.updatedAt)
+                    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+                // Only look at the most recent session per agent
+                const recent = sessions[0];
+                if (!recent) continue;
+
+                const age = Date.now() - recent.updatedAt;
+                // Only show feed from sessions active in last 30 minutes
+                if (age > 30 * 60 * 1000) continue;
+
+                const logFile = path.join(agentsDir, agentId, 'sessions', `${recent.sessionId}.jsonl`);
+                if (!fs.existsSync(logFile)) continue;
+
+                // Read last ~8KB from the log file to get recent messages
+                const stat = fs.statSync(logFile);
+                const readSize = Math.min(stat.size, 16384);
+                const buffer = Buffer.alloc(readSize);
+                const fd = fs.openSync(logFile, 'r');
+                fs.readSync(fd, buffer, 0, readSize, Math.max(0, stat.size - readSize));
+                fs.closeSync(fd);
+
+                const lines = buffer.toString('utf8').split('\n').filter(l => l.trim());
+
+                for (const line of lines) {
+                    try {
+                        const entry = JSON.parse(line);
+                        if (entry.type !== 'message' || !entry.message) continue;
+                        const msg = entry.message;
+
+                        if (msg.role === 'assistant' && msg.content) {
+                            // Extract text content
+                            const textParts = Array.isArray(msg.content)
+                                ? msg.content.filter(c => c.type === 'text').map(c => c.text)
+                                : [String(msg.content)];
+
+                            // Extract tool calls
+                            const toolCalls = Array.isArray(msg.content)
+                                ? msg.content.filter(c => c.type === 'toolCall').map(c => ({
+                                    tool: c.name,
+                                    args: typeof c.arguments === 'string' ? c.arguments.substring(0, 200) : JSON.stringify(c.arguments || {}).substring(0, 200)
+                                }))
+                                : [];
+
+                            const text = textParts.join('\n').substring(0, 500);
+                            if (!text && toolCalls.length === 0) continue;
+
+                            feedItems.push({
+                                agent: agentId.toUpperCase(),
+                                timestamp: entry.timestamp || msg.timestamp ? new Date(entry.timestamp || msg.timestamp).toISOString() : null,
+                                text: text || null,
+                                toolCalls: toolCalls.length > 0 ? toolCalls : null,
+                                model: msg.model || null,
+                                label: recent.label || null
+                            });
+                        } else if (msg.role === 'toolResult') {
+                            // Show tool results briefly
+                            const resultText = Array.isArray(msg.content)
+                                ? msg.content.filter(c => c.type === 'text').map(c => c.text).join('\n').substring(0, 300)
+                                : String(msg.content || '').substring(0, 300);
+
+                            if (resultText && msg.toolName) {
+                                feedItems.push({
+                                    agent: agentId.toUpperCase(),
+                                    timestamp: entry.timestamp ? new Date(entry.timestamp).toISOString() : null,
+                                    text: null,
+                                    toolResult: {
+                                        tool: msg.toolName,
+                                        output: resultText,
+                                        status: msg.details?.status || null,
+                                        isError: msg.isError || false
+                                    },
+                                    label: recent.label || null
+                                });
+                            }
+                        }
+                    } catch { /* skip malformed lines */ }
+                }
+            }
+        }
+
+        // Sort by timestamp desc and limit
+        feedItems.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+        res.json({ feed: feedItems.slice(0, limit) });
+    } catch (error) {
+        console.error('Agent feed error:', error);
+        res.json({ feed: [] });
+    }
+});
+
 // Update agent status
 app.post('/api/agent-status', (req, res) => {
     try {
@@ -1235,17 +1348,18 @@ function isAgentBusy(agentId) {
 app.get('/api/orchestrator/next-task', (req, res) => {
     try {
         const data = readData();
-        let nextTask = null;
-        let project = null;
+        let offenTask = null;
+        let reviewTask = null;
+        let offenProject = null;
+        let reviewProject = null;
 
-        // Iterate all projects, find oldest offen task (ignore hintl)
+        // Collect oldest offen task across all projects
         for (const p of data.projects) {
             const offenTasks = p.tasks.filter(t => 
                 normalizeStatus(t.status) === 'offen' && 
                 !t.hintl
             );
 
-            // Sort by: priority (P0 > P1 > P2) then by date (oldest first)
             const sorted = offenTasks.sort((a, b) => {
                 const prioOrder = { 'high': 0, 'medium': 1, 'low': 2 };
                 const prioA = prioOrder[a.priority] ?? 1;
@@ -1254,28 +1368,75 @@ app.get('/api/orchestrator/next-task', (req, res) => {
                 return new Date(a.date || '2099-01-01') - new Date(b.date || '2099-01-01');
             });
 
-            if (sorted.length > 0) {
-                nextTask = sorted[0];
-                project = p;
-                break;
+            if (sorted.length > 0 && !offenTask) {
+                offenTask = sorted[0];
+                offenProject = p;
             }
         }
 
-        if (!nextTask || !project) {
+        // Collect oldest review task across all projects (INDEPENDENTLY)
+        for (const p of data.projects) {
+            const reviewTasks = p.tasks.filter(t => 
+                normalizeStatus(t.status) === 'review' && 
+                !t.hintl
+            );
+
+            const sorted = reviewTasks.sort((a, b) => {
+                const prioOrder = { 'high': 0, 'medium': 1, 'low': 2 };
+                const prioA = prioOrder[a.priority] ?? 1;
+                const prioB = prioOrder[b.priority] ?? 1;
+                if (prioA !== prioB) return prioA - prioB;
+                return new Date(a.date || '2099-01-01') - new Date(b.date || '2099-01-01');
+            });
+
+            if (sorted.length > 0 && !reviewTask) {
+                reviewTask = sorted[0];
+                reviewProject = p;
+            }
+        }
+
+        // Return based on query param: ?type=offen or ?type=review
+        // If type specified, return that type; otherwise return offen first (for backwards compatibility)
+        const requestType = req.query.type || 'offen';
+
+        if (requestType === 'review') {
+            if (!reviewTask || !reviewProject) {
+                return res.json({ 
+                    task: null, 
+                    project: null,
+                    message: 'Keine review Tasks gefunden',
+                    targetAgent: 'REVAGENT'
+                });
+            }
+            return res.json({
+                task: reviewTask,
+                project: {
+                    id: reviewProject.id,
+                    name: reviewProject.name,
+                    projectPath: reviewProject.projectPath
+                },
+                targetAgent: 'REVAGENT'
+            });
+        }
+
+        // Default: offen
+        if (!offenTask || !offenProject) {
             return res.json({ 
                 task: null, 
                 project: null,
-                message: 'Keine offenen Tasks gefunden' 
+                message: 'Keine offen Tasks gefunden',
+                targetAgent: 'CODEAGENT'
             });
         }
 
         res.json({
-            task: nextTask,
+            task: offenTask,
             project: {
-                id: project.id,
-                name: project.name,
-                projectPath: project.projectPath
-            }
+                id: offenProject.id,
+                name: offenProject.name,
+                projectPath: offenProject.projectPath
+            },
+            targetAgent: 'CODEAGENT'
         });
     } catch (error) {
         res.status(500).json({ error: error.message });

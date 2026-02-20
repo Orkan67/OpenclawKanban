@@ -443,6 +443,192 @@
   margin-top: 0.25rem;
 }
 
+/* Stat Card — Agents Active Highlight */
+.stat-card.stat-agents-active {
+  border-color: #f97316;
+  background: rgba(249, 115, 22, 0.08);
+}
+
+.stat-card.stat-agents-active .stat-value {
+  color: #f97316;
+}
+
+/* 📡 Live Agent Feed Section */
+.agent-feed-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.agent-feed-section h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.agent-feed-container {
+  max-height: 500px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.agent-feed-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.agent-feed-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.agent-feed-container::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.feed-item {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  transition: all 0.15s ease;
+}
+
+.feed-item:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.03);
+}
+
+.feed-item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.feed-agent-badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: 1px solid;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.feed-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-family: monospace;
+  background: var(--bg-secondary);
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.feed-time {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.feed-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.feed-text {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.feed-tool-call {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(249, 115, 22, 0.06);
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  border-radius: 4px;
+  font-size: 0.78rem;
+}
+
+.feed-tool-icon {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+}
+
+.feed-tool-name {
+  font-weight: 600;
+  color: #f97316;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.feed-tool-args {
+  color: var(--text-secondary);
+  font-family: monospace;
+  font-size: 0.72rem;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.feed-tool-result {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(63, 185, 80, 0.06);
+  border: 1px solid rgba(63, 185, 80, 0.15);
+  border-radius: 4px;
+  font-size: 0.78rem;
+}
+
+.feed-tool-result.feed-tool-error {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+.feed-tool-result .feed-tool-name {
+  color: #3fb950;
+}
+
+.feed-tool-result.feed-tool-error .feed-tool-name {
+  color: #ef4444;
+}
+
+.feed-tool-output {
+  color: var(--text-secondary);
+  font-family: monospace;
+  font-size: 0.72rem;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.feed-model {
+  margin-top: 0.35rem;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  font-family: monospace;
+  opacity: 0.7;
+}
+
+.feed-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
 @media (max-width: 1200px) {
   .dashboard-content {
     grid-template-columns: 1fr;

@@ -4,13 +4,20 @@ import './Dashboard.css'
 function Dashboard({ projects }) {
   const [activities, setActivities] = useState([])
   const [subagents, setSubagents] = useState([])
+  const [agentFeed, setAgentFeed] = useState([])
 
   useEffect(() => {
     fetchRecentActivities()
     fetchSubagents()
+    fetchAgentFeed()
     // Poll subagent status every 5 seconds (live tracking)
-    const interval = setInterval(fetchSubagents, 5000)
-    return () => clearInterval(interval)
+    const subagentInterval = setInterval(fetchSubagents, 5000)
+    // Poll agent feed every 3 seconds for live updates
+    const feedInterval = setInterval(fetchAgentFeed, 3000)
+    return () => {
+      clearInterval(subagentInterval)
+      clearInterval(feedInterval)
+    }
   }, [])
 
   const fetchRecentActivities = async () => {
@@ -33,6 +40,16 @@ function Dashboard({ projects }) {
     }
   }
 
+  const fetchAgentFeed = async () => {
+    try {
+      const response = await fetch('/api/agent-feed?limit=30')
+      const data = await response.json()
+      setAgentFeed(data.feed || [])
+    } catch (error) {
+      console.error('Error fetching agent feed:', error)
+    }
+  }
+
   const calculateStats = () => {
     let totalTasks = 0
     let completedTasks = 0
@@ -45,10 +62,44 @@ function Dashboard({ projects }) {
       inProgressTasks += tasks.filter(t => t.status === 'in-progress').length
     })
 
-    return { totalTasks, completedTasks, inProgressTasks }
+    const workingAgents = subagents.filter(a => a.status === 'working').length
+
+    return { totalTasks, completedTasks, inProgressTasks, workingAgents }
   }
 
   const stats = calculateStats()
+
+  const getAgentColor = (agent) => {
+    const colors = {
+      'CODEAGENT': '#3b82f6',
+      'REVAGENT': '#8b5cf6',
+      'ORCHESTRATOR': '#f97316',
+      'KBAGENT': '#ec4899'
+    }
+    return colors[agent] || '#6b7280'
+  }
+
+  const formatFeedTime = (timestamp) => {
+    if (!timestamp) return ''
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diffMs = now - date
+    const diffSec = Math.floor(diffMs / 1000)
+    const diffMin = Math.floor(diffSec / 60)
+    
+    if (diffSec < 10) return 'gerade eben'
+    if (diffSec < 60) return `vor ${diffSec}s`
+    if (diffMin < 60) return `vor ${diffMin}m`
+    return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  const truncateText = (text, max = 150) => {
+    if (!text) return ''
+    // Remove markdown headers and clean up
+    const cleaned = text.replace(/^#+\s/gm, '').replace(/\*\*/g, '').trim()
+    if (cleaned.length <= max) return cleaned
+    return cleaned.substring(0, max) + '…'
+  }
 
   return (
     <div className="dashboard-page">
@@ -73,6 +124,10 @@ function Dashboard({ projects }) {
         <div className="stat-card">
           <div className="stat-value">{stats.completedTasks}</div>
           <div className="stat-label">Erledigt</div>
+        </div>
+        <div className={`stat-card stat-agents ${stats.workingAgents > 0 ? 'stat-agents-active' : ''}`}>
+          <div className="stat-value">{stats.workingAgents}</div>
+          <div className="stat-label">🤖 Agents aktiv</div>
         </div>
       </div>
 
@@ -109,6 +164,57 @@ function Dashboard({ projects }) {
           ) : (
             <div className="alert-empty">
               <p>🔄 Agenten werden geladen...</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 📡 Live Agent Feed */}
+      <div className="agent-feed-section">
+        <h2>📡 Live Agent Feed</h2>
+        <div className="agent-feed-container">
+          {agentFeed.length > 0 ? (
+            agentFeed.map((item, index) => (
+              <div key={index} className="feed-item">
+                <div className="feed-item-header">
+                  <span 
+                    className="feed-agent-badge"
+                    style={{ backgroundColor: getAgentColor(item.agent) + '22', color: getAgentColor(item.agent), borderColor: getAgentColor(item.agent) + '44' }}
+                  >
+                    {item.agent}
+                  </span>
+                  {item.label && (
+                    <span className="feed-label">{item.label}</span>
+                  )}
+                  <span className="feed-time">{formatFeedTime(item.timestamp)}</span>
+                </div>
+                <div className="feed-item-body">
+                  {item.text && (
+                    <div className="feed-text">{truncateText(item.text)}</div>
+                  )}
+                  {item.toolCalls && item.toolCalls.map((tc, i) => (
+                    <div key={i} className="feed-tool-call">
+                      <span className="feed-tool-icon">⚡</span>
+                      <span className="feed-tool-name">{tc.tool}</span>
+                      <span className="feed-tool-args">{truncateText(tc.args, 100)}</span>
+                    </div>
+                  ))}
+                  {item.toolResult && (
+                    <div className={`feed-tool-result ${item.toolResult.isError ? 'feed-tool-error' : ''}`}>
+                      <span className="feed-tool-icon">{item.toolResult.isError ? '❌' : '✅'}</span>
+                      <span className="feed-tool-name">{item.toolResult.tool}</span>
+                      <span className="feed-tool-output">{truncateText(item.toolResult.output, 120)}</span>
+                    </div>
+                  )}
+                </div>
+                {item.model && (
+                  <div className="feed-model">{item.model}</div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="feed-empty">
+              <p>💤 Keine aktiven Agent-Aktivitäten</p>
             </div>
           )}
         </div>
@@ -155,7 +261,7 @@ function Dashboard({ projects }) {
                   </div>
                 </div>
               ))
-            )}}
+            )}
           </div>
         </div>
       </div>
